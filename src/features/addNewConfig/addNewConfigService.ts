@@ -56,23 +56,22 @@ export const checkDefaultValueValidity = (
   defaultValue: string,
   type: Type,
   possibleValues: string,
-  component : string
+  component: string
 ): [boolean, string] => {
   // Check if the type matches
-  console.log(getType(defaultValue), type.type.toLowerCase());
   const isTypeValid = getType(defaultValue) === type.type.toLowerCase();
 
   // If possibleValues is provided, check if defaultValue matches any of the regex patterns
   let isValueValid = true;
-if (possibleValues) {
-  // Create a regex pattern from the comma-separated possible values  
-  // Check if defaultValue matches any of the regex patterns
-  isValueValid = possibleValues.split("\n").every((value) => {
-    const curRegex = new RegExp(value.trim());
-    const answer = curRegex.test(String(defaultValue).replace(/\n/g, ''));
-    return answer;
-});
-}
+  if (possibleValues) {
+    // Create a regex pattern from the comma-separated possible values
+    // Check if defaultValue matches any of the regex patterns
+    isValueValid = possibleValues.split("\n").every((value) => {
+      const curRegex = new RegExp(value.trim());
+      const answer = curRegex.test(String(defaultValue).replace(/\n/g, ""));
+      return answer;
+    });
+  }
 
   // Return true only if both checks pass
   if (isTypeValid && isValueValid) {
@@ -80,9 +79,9 @@ if (possibleValues) {
   } else if (!isTypeValid) {
     return [false, `${component} value does not match the type`];
   } else if (!isValueValid) {
-    return [false,  `${component} value does not match the possible values`];
+    return [false, `${component} value does not match the possible values`];
   }
-  return [false,  `${component} value is invalid`];
+  return [false, `${component} value is invalid`];
 };
 export const makeAddNewConfigPostRequest = async (body: {
   name: string;
@@ -92,7 +91,7 @@ export const makeAddNewConfigPostRequest = async (body: {
   description: string;
   possibleVals: string[];
 }): Promise<Response> => {
-   try{
+  try {
     const response = await fetch("/api/addNewConfig", {
       method: "POST",
       headers: {
@@ -104,4 +103,4 @@ export const makeAddNewConfigPostRequest = async (body: {
   } catch (error) {
     throw new Error(`Failed to add config ${error}`);
   }
-}
+};
