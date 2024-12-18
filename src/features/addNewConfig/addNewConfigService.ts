@@ -84,3 +84,24 @@ if (possibleValues) {
   }
   return [false,  `${component} value is invalid`];
 };
+export const makeAddNewConfigPostRequest = async (body: {
+  name: string;
+  type: string;
+  defaultValue: string;
+  docUrl: string;
+  description: string;
+  possibleVals: string[];
+}): Promise<Response> => {
+   try{
+    const response = await fetch("/api/addNewConfig", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    return response;
+  } catch (error) {
+    throw new Error(`Failed to add config ${error}`);
+  }
+}

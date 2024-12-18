@@ -10,8 +10,14 @@ import "./addNewConfig.css";
 import {
   checkDefaultValueValidity,
   getAllPossibleTypes,
+  makeAddNewConfigPostRequest,
   shouldChangeDefaultValue,
 } from "./addNewConfigService";
+import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import "primereact/resources/primereact.min.css"; // Core CSS
+import "primereact/resources/themes/tailwind-light/theme.css"; // Adjust the theme as needed; for a specific Material theme
+import "primeicons/primeicons.css";
+
 function AddNewConfig() {
   const possibleTypes: Type[] = getAllPossibleTypes();
   const [name, setName] = useState<string>("");
@@ -31,27 +37,35 @@ function AddNewConfig() {
   const [defaultValueErrorMessage, setDefaultValueErrorMessage] = useState("");
   const [isTestValueValid, setIsTestValueValid] = useState(true);
   const [testValueErrorMessage, setTestValueErrorMessage] = useState("");
-  const canSubmit = name && type && docUrl && description && isDefaultValueValid;
-  const handleSubmit = (e: React.FormEvent) => {
+  const canSubmit =
+    name && type && docUrl && description && isDefaultValueValid;
+  const handleSubmit = async () => {
     setIsSubmitAttempted(true);
-    if(!canSubmit) return;
-    e.preventDefault();
-    console.log({
-      name,
-      type,
-      docUrl,
-      description,
-      possibleValues,
-      inputValue,
-      defaultValue,
-    });
+    if (!canSubmit) return;
+    try {
+      const body = {
+        name: name,
+        type: type.type,
+        defaultValue: defaultValue,
+        docUrl: docUrl,
+        description: description,
+        possibleVals: possibleValues.split("\n").map((val) => val.trim()),
+      };
+      const response = await makeAddNewConfigPostRequest(body);
+      if (response.status === 200) {
+        alert("Config added successfully");
+      }
+    } catch (error) {
+      alert("Failed to add config");
+      console.error(error);
+    }
   };
   const handleCancel = () => {
     setName("");
     setDocUrl("");
     setDescription("");
     setPossibleValues("");
-    setInputValue(type.defaultValue)
+    setInputValue(type.defaultValue);
     setDefaultValue(type.defaultValue);
     setIsSubmitAttempted(false);
     setIsTestValueValid(true);
@@ -70,6 +84,25 @@ function AddNewConfig() {
     if (shouldChangeDefaultValue(inputValue)) {
       setInputValue(value.defaultValue);
     }
+  };
+  const confirmSubmit = () => {
+    confirmDialog({
+      message: "Are you sure you want to submit?",
+      header: "Confirmation",
+      icon: "pi pi-exclamation-triangle",
+      accept: handleSubmit, // Call handleSubmit if confirmed
+      reject: () => {}, // Optional: handle rejection if needed
+    });
+  };
+
+  const confirmCancel = () => {
+    confirmDialog({
+      message: "Are you sure you want to cancel?",
+      header: "Confirmation",
+      icon: "pi pi-exclamation-triangle",
+      accept: handleCancel, // Call handleCancel if confirmed
+      reject: () => {}, // Optional: handle rejection if needed
+    });
   };
   useEffect(() => {
     if (defaultValue) {
@@ -207,7 +240,7 @@ function AddNewConfig() {
               />
             </div>
           )}
-    </div>
+        </div>
 
         <div className="addNewConfig-form-defaultValue-container">
           <TextField
@@ -233,29 +266,29 @@ function AddNewConfig() {
         <div className="addNewConfig-form-buttons-container">
           <Button
             variant="contained"
-            type="submit"
-            onClick={handleSubmit}
-            style={
-                {
-                    backgroundColor:"#03C5B0"
-                }
-            }
+            type="button" // Ideally, use "button" for confirmation
+            onClick={confirmSubmit}
+            style={{ backgroundColor: "#03C5B0" }}
           >
             Submit
           </Button>
-          <Button variant="outlined"  onClick={handleCancel} style={
-                {
-                    backgroundColor:"#A2A2A2",
-                    color:"white",
-                    borderColor:"#A2A2A2"
-                }
-            }>
+          <Button
+            variant="outlined"
+            type="button" // Ideally, use "button" for confirmation
+            onClick={confirmCancel}
+            style={{
+              backgroundColor: "#A2A2A2",
+              color: "white",
+              borderColor: "#A2A2A2",
+            }}
+          >
             Cancel
           </Button>
+          {/* Include the ConfirmDialog in your component */}
+          <ConfirmDialog />
         </div>
       </div>
     </div>
   );
 }
-
 export default AddNewConfig;
