@@ -9,6 +9,9 @@ import { Type } from "./addNewConfig.types";
 import "./addNewConfig.css";
 import {
   checkDefaultValueValidity,
+  checkIfDocURLIsValid,
+  checkIfDomainTypeValueIsValid,
+  checkIfRegExpsAreValid,
   getAllPossibleTypes,
   makeAddNewConfigPostRequest,
   shouldChangeDefaultValue,
@@ -25,6 +28,8 @@ function AddNewConfig() {
   const [docUrl, setDocUrl] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [possibleValues, setPossibleValues] = useState<string>("");
+  const [isPossibleValuesValid, setIsPossibleValuesValid] = useState(true);
+  const [domainType, setDomainType] = useState<string>("");
   const [inputValue, setInputValue] = useState<string>(
     possibleTypes[0].defaultValue
   );
@@ -37,10 +42,12 @@ function AddNewConfig() {
   const [defaultValueErrorMessage, setDefaultValueErrorMessage] = useState("");
   const [isTestValueValid, setIsTestValueValid] = useState(true);
   const [testValueErrorMessage, setTestValueErrorMessage] = useState("");
+  const [isDomainTypeVaid, setIsDomainTypeValid] = useState(true);
+  const [isDocUrlValid, setIsDocUrlValid] = useState(true);
+
   const canSubmit =
-    name && type && docUrl && description && isDefaultValueValid;
+    name && type && docUrl && description && isDefaultValueValid && isPossibleValuesValid && isDomainTypeVaid && isDocUrlValid;
   const handleSubmit = async () => {
-    setIsSubmitAttempted(true);
     if (!canSubmit) return;
     try {
       const body = {
@@ -50,6 +57,7 @@ function AddNewConfig() {
         docUrl: docUrl,
         description: description,
         possibleVals: possibleValues.split("\n").map((val) => val.trim()),
+        domainType: domainType
       };
       const response = await makeAddNewConfigPostRequest(body);
       if (response.status === 200) {
@@ -67,10 +75,14 @@ function AddNewConfig() {
     setPossibleValues("");
     setInputValue(type.defaultValue);
     setDefaultValue(type.defaultValue);
+    setDomainType("");
     setIsSubmitAttempted(false);
     setIsTestValueValid(true);
     setIsDefaultValueValid(true);
     setShowDropDownValues(false);
+    setIsPossibleValuesValid(true);
+    setIsDomainTypeValid(true);
+    setIsDocUrlValid(true);
   };
   const handleTypeChange = (
     _: React.SyntheticEvent<Element, Event>,
@@ -85,6 +97,40 @@ function AddNewConfig() {
       setInputValue(value.defaultValue);
     }
   };
+  const handlePossibleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setPossibleValues(newValue);
+    if (newValue) {
+      const isValid = checkIfRegExpsAreValid(newValue);
+      setIsPossibleValuesValid(isValid);
+    }
+    else{
+      setIsPossibleValuesValid(true);
+    }
+
+  }
+  const handleDomainTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDomainType(value);
+    if(value){
+      const isValid = checkIfDomainTypeValueIsValid(value);
+      setIsDomainTypeValid(isValid);
+    }
+    else{
+      setIsDomainTypeValid(true);
+    }
+  }
+  const handleDocUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDocUrl(value);
+    if(value){
+      const isValid = checkIfDocURLIsValid(value);
+      setIsDocUrlValid(isValid);
+    }
+    else{
+      setIsDocUrlValid(true);
+    }
+  }
   const confirmSubmit = () => {
     confirmDialog({
       message: "Are you sure you want to submit?",
@@ -94,7 +140,6 @@ function AddNewConfig() {
       reject: () => {}, // Optional: handle rejection if needed
     });
   };
-
   const confirmCancel = () => {
     confirmDialog({
       message: "Are you sure you want to cancel?",
@@ -181,11 +226,15 @@ function AddNewConfig() {
             type="url"
             required
             value={docUrl}
-            onChange={(e) => setDocUrl(e.target.value)}
-            error={isSubmitAttempted && !docUrl}
+            onChange={handleDocUrlChange}
+            error={(isSubmitAttempted && !docUrl) || !isDocUrlValid}
             placeholder="Enter the document URL"
             helperText={
-              isSubmitAttempted && !docUrl ? "Document URL is Required" : ""
+              (isSubmitAttempted && !docUrl) 
+              ? "Document URL is Required" 
+              : !isDocUrlValid
+              ? "Invalid URL (HINT: include http:// or https://)"
+              : ""
             }
           />
           <TextField
@@ -202,6 +251,25 @@ function AddNewConfig() {
             }
           />
         </div>
+        <div className="addNewConfig-form-domainType-container">
+        <TextField
+            fullWidth
+            label="Domain Type"
+            variant="outlined"
+            value={domainType}
+            required
+            onChange={handleDomainTypeChange}
+            error={(isSubmitAttempted && !domainType) || !isDomainTypeVaid}
+            helperText={
+              (isSubmitAttempted && !domainType) 
+              ? "Domain Type is Required" 
+              : !isDomainTypeVaid
+              ? "Domain Type must only be alphanumeric and underscores"
+              : ""
+            } // Conditional helper text
+            placeholder="Give a Domain Type for the config"
+          />
+        </div>
         <div className="addNewConfig-form-possibleValues-container">
           <TextField
             fullWidth
@@ -210,8 +278,10 @@ function AddNewConfig() {
             multiline
             rows={3}
             value={possibleValues}
-            onChange={(e) => setPossibleValues(e.target.value)}
+            onChange={handlePossibleValueChange}
             placeholder="List line seperated RexExp. Like ^[a-zA-Z0-9]+$"
+            error = {!isPossibleValuesValid}
+            helperText = {!isPossibleValuesValid ? "Possible values are invalid" : "" }
           />
         </div>
         <div className="addNewConfig-form-testValidation-wrapper">
@@ -267,7 +337,11 @@ function AddNewConfig() {
           <Button
             variant="contained"
             type="button" // Ideally, use "button" for confirmation
-            onClick={confirmSubmit}
+            onClick={()=>{  
+              setIsSubmitAttempted(true);
+              if(canSubmit)
+                confirmSubmit();
+            }}
             style={{ backgroundColor: "#03C5B0" }}
           >
             Submit

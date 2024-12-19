@@ -21,6 +21,9 @@
   gap: 1em;
 
 }
+.addNewConfig-form-domainType-container{
+
+}
 .addNewConfig-form-possibleValues-container {
   display: flex;
   flex-direction: row;

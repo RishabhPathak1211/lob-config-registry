@@ -31,7 +31,6 @@ const parseValue = (input: string) => {
   }
 };
 
-// Function to determine the type
 const getType = (value: string): string => {
   const parsedValue = parseValue(value);
 
@@ -63,7 +62,11 @@ export const checkDefaultValueValidity = (
 
   // If possibleValues is provided, check if defaultValue matches any of the regex patterns
   let isValueValid = true;
+
   if (possibleValues) {
+    if(!checkIfRegExpsAreValid(possibleValues)) {
+      return [false, `Possible values are invalid`]
+    }
     // Create a regex pattern from the comma-separated possible values
     // Check if defaultValue matches any of the regex patterns
     isValueValid = possibleValues.split("\n").every((value) => {
@@ -90,7 +93,10 @@ export const makeAddNewConfigPostRequest = async (body: {
   docUrl: string;
   description: string;
   possibleVals: string[];
-}): Promise<Response> => {
+}) => {
+  return {
+    status : 200
+  }
   try {
     const response = await fetch("/api/addNewConfig", {
       method: "POST",
@@ -104,3 +110,27 @@ export const makeAddNewConfigPostRequest = async (body: {
     throw new Error(`Failed to add config ${error}`);
   }
 };
+export const checkIfRegExpsAreValid = (possibleValues : string) : boolean => {
+  const regexps = possibleValues.split("\n");
+  try {
+    regexps.forEach((regexp) => {
+      new RegExp(regexp.trim());
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+export const checkIfDomainTypeValueIsValid = (value: string): boolean => {
+  // Ensure it is a string and contains only alphanumeric characters and underscores
+  return typeof value === "string" && /^[a-zA-Z0-9_]*$/.test(value);
+};
+export const checkIfDocURLIsValid = (value: string): boolean => {
+  try {
+    new URL(value);
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
