@@ -292,7 +292,7 @@ function AddNewConfig() {
             <FontAwesomeIcon
               icon={showDropDownValues ? faChevronDown : faChevronRight}
             />
-            <div>Try out the config validations</div>
+            <div>Test the config validations</div>
           </Button>
           {showDropDownValues && (
             <div>
