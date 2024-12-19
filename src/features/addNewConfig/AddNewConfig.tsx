@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { TextField, Button, Typography, Autocomplete } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Typography,
+  Autocomplete,
+  Alert,
+  Snackbar,
+  AlertColor,
+} from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronRight,
@@ -14,7 +22,6 @@ import {
   checkIfRegExpsAreValid,
   getAllPossibleTypes,
   makeAddNewConfigPostRequest,
-  shouldChangeDefaultValue,
 } from "./addNewConfigService";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import "primereact/resources/primereact.min.css"; // Core CSS
@@ -45,8 +52,20 @@ function AddNewConfig() {
   const [isDomainTypeVaid, setIsDomainTypeValid] = useState(true);
   const [isDocUrlValid, setIsDocUrlValid] = useState(true);
 
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    message: string;
+    severity: AlertColor | undefined;
+  }>({ open: false, message: "", severity: undefined });
   const canSubmit =
-    name && type && docUrl && description && isDefaultValueValid && isPossibleValuesValid && isDomainTypeVaid && isDocUrlValid;
+    name &&
+    type &&
+    docUrl &&
+    description &&
+    isDefaultValueValid &&
+    isPossibleValuesValid &&
+    isDomainTypeVaid &&
+    isDocUrlValid;
   const handleSubmit = async () => {
     if (!canSubmit) return;
     try {
@@ -56,15 +75,23 @@ function AddNewConfig() {
         defaultValue: defaultValue,
         docUrl: docUrl,
         description: description,
-        possibleVals: possibleValues.split("\n").map((val) => val.trim()),
-        domainType: domainType
+        validations: possibleValues.split("\n").map((val) => val.trim()),
+        domainType: domainType,
       };
-      const response = await makeAddNewConfigPostRequest(body);
-      if (response.status === 200) {
-        alert("Config added successfully");
+      const [requestSuccessfull, message] = (await makeAddNewConfigPostRequest(
+        body
+      )) || [false, "Unknown error"];
+      if (requestSuccessfull === 201) {
+        setAlert({ open: true, message: message, severity: "success" });
+      } else {
+        setAlert({ open: true, message: message, severity: "error" });
       }
     } catch (error) {
-      alert("Failed to add config");
+      setAlert({
+        open: true,
+        message: "error while adding new config",
+        severity: "error",
+      });
       console.error(error);
     }
   };
@@ -90,47 +117,41 @@ function AddNewConfig() {
   ) => {
     if (!value) return;
     setType(value);
-    if (shouldChangeDefaultValue(defaultValue)) {
-      setDefaultValue(value.defaultValue);
-    }
-    if (shouldChangeDefaultValue(inputValue)) {
-      setInputValue(value.defaultValue);
-    }
+    setDefaultValue(value.defaultValue);
+    setInputValue(value.defaultValue);
   };
-  const handlePossibleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePossibleValueChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const newValue = e.target.value;
     setPossibleValues(newValue);
     if (newValue) {
       const isValid = checkIfRegExpsAreValid(newValue);
       setIsPossibleValuesValid(isValid);
-    }
-    else{
+    } else {
       setIsPossibleValuesValid(true);
     }
-
-  }
+  };
   const handleDomainTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setDomainType(value);
-    if(value){
+    if (value) {
       const isValid = checkIfDomainTypeValueIsValid(value);
       setIsDomainTypeValid(isValid);
-    }
-    else{
+    } else {
       setIsDomainTypeValid(true);
     }
-  }
+  };
   const handleDocUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setDocUrl(value);
-    if(value){
+    if (value) {
       const isValid = checkIfDocURLIsValid(value);
       setIsDocUrlValid(isValid);
-    }
-    else{
+    } else {
       setIsDocUrlValid(true);
     }
-  }
+  };
   const confirmSubmit = () => {
     confirmDialog({
       message: "Are you sure you want to submit?",
@@ -139,6 +160,9 @@ function AddNewConfig() {
       accept: handleSubmit, // Call handleSubmit if confirmed
       reject: () => {}, // Optional: handle rejection if needed
     });
+  };
+  const handleAlertClose = () => {
+    setAlert({ ...alert, open: false });
   };
   const confirmCancel = () => {
     confirmDialog({
@@ -230,11 +254,11 @@ function AddNewConfig() {
             error={(isSubmitAttempted && !docUrl) || !isDocUrlValid}
             placeholder="Enter the document URL"
             helperText={
-              (isSubmitAttempted && !docUrl) 
-              ? "Document URL is Required" 
-              : !isDocUrlValid
-              ? "Invalid URL (HINT: include http:// or https://)"
-              : ""
+              isSubmitAttempted && !docUrl
+                ? "Document URL is Required"
+                : !isDocUrlValid
+                ? "Invalid URL (HINT: include http:// or https://)"
+                : ""
             }
           />
           <TextField
@@ -252,7 +276,7 @@ function AddNewConfig() {
           />
         </div>
         <div className="addNewConfig-form-domainType-container">
-        <TextField
+          <TextField
             fullWidth
             label="Domain Type"
             variant="outlined"
@@ -261,11 +285,11 @@ function AddNewConfig() {
             onChange={handleDomainTypeChange}
             error={(isSubmitAttempted && !domainType) || !isDomainTypeVaid}
             helperText={
-              (isSubmitAttempted && !domainType) 
-              ? "Domain Type is Required" 
-              : !isDomainTypeVaid
-              ? "Domain Type must only be alphanumeric and underscores"
-              : ""
+              isSubmitAttempted && !domainType
+                ? "Domain Type is Required"
+                : !isDomainTypeVaid
+                ? "Domain Type must only be alphanumeric and underscores"
+                : ""
             } // Conditional helper text
             placeholder="Give a Domain Type for the config"
           />
@@ -280,8 +304,10 @@ function AddNewConfig() {
             value={possibleValues}
             onChange={handlePossibleValueChange}
             placeholder="List line seperated RexExp. Like ^[a-zA-Z0-9]+$"
-            error = {!isPossibleValuesValid}
-            helperText = {!isPossibleValuesValid ? "Possible values are invalid" : "" }
+            error={!isPossibleValuesValid}
+            helperText={
+              !isPossibleValuesValid ? "Possible values are invalid" : ""
+            }
           />
         </div>
         <div className="addNewConfig-form-testValidation-wrapper">
@@ -337,10 +363,9 @@ function AddNewConfig() {
           <Button
             variant="contained"
             type="button" // Ideally, use "button" for confirmation
-            onClick={()=>{  
+            onClick={() => {
               setIsSubmitAttempted(true);
-              if(canSubmit)
-                confirmSubmit();
+              if (canSubmit) confirmSubmit();
             }}
             style={{ backgroundColor: "#03C5B0" }}
           >
@@ -362,6 +387,21 @@ function AddNewConfig() {
           <ConfirmDialog />
         </div>
       </div>
+      {/* Alert component */}
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={6000}
+        onClose={handleAlertClose}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleAlertClose}
+          severity={alert.severity}
+          sx={{ width: "100%" }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

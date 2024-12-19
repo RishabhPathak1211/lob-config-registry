@@ -9,12 +9,6 @@ export const getAllPossibleTypes = (): Type[] => {
     { label: "Object", type: "object", defaultValue: `{}` },
   ];
 };
-export const shouldChangeDefaultValue = (defaultVal: string): boolean => {
-  const allDefaultValues = getAllPossibleTypes().map(
-    (type) => type.defaultValue
-  );
-  return allDefaultValues.includes(defaultVal) || defaultVal === "";
-};
 const parseValue = (input: string) => {
   // Attempt to parse input as JSON (for objects and arrays)
   try {
@@ -92,22 +86,23 @@ export const makeAddNewConfigPostRequest = async (body: {
   defaultValue: string;
   docUrl: string;
   description: string;
-  possibleVals: string[];
-}) => {
-  return {
-    status : 200
-  }
+  validations: string[];
+})=> {
   try {
-    const response = await fetch("/api/addNewConfig", {
+    const response = await fetch("https://l8oq52vga7.execute-api.ap-south-1.amazonaws.com/globalConfig", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+      "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
-    return response;
+    if(response.status === 201)
+        return [true, "Config added successfully"];
+    if(response.status === 400)
+        {const errorResponse = await response.json();
+        return [false, errorResponse?.error || "error while saving new config"];}
   } catch (error) {
-    throw new Error(`Failed to add config ${error}`);
+  return [false, "An error occurred while adding the config " + error];
   }
 };
 export const checkIfRegExpsAreValid = (possibleValues : string) : boolean => {
