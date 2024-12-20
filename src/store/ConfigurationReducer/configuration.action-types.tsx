@@ -1,5 +1,6 @@
 export const CONFIGURATION_REDUCER_ACTION_TYPES = {
     SET_CONFIG_VALUE: "SET_CONFIG_VALUE",
+    SET_CURRENT_SELECTED_DOMAIN: "SET_CURRENT_SELECTED_DOMAIN",
   } as const;
   
   export type ConfigurationActionTypes =
