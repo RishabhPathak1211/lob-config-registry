@@ -21,7 +21,9 @@ import {
   checkIfDomainTypeValueIsValid,
   checkIfRegExpsAreValid,
   getAllPossibleTypes,
+  getTypesForWhichPossibleValuesAreNotApplicable,
   makeAddNewConfigPostRequest,
+  typeCastTheDefaultValue,
 } from "./addNewConfigService";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import "primereact/resources/primereact.min.css"; // Core CSS
@@ -30,6 +32,7 @@ import "primeicons/primeicons.css";
 
 function AddNewConfig() {
   const possibleTypes: Type[] = getAllPossibleTypes();
+  const typesForWhichPossibleValusAreNotApplicable = getTypesForWhichPossibleValuesAreNotApplicable();
   const [name, setName] = useState<string>("");
   const [type, setType] = useState<Type>(possibleTypes[0]);
   const [docUrl, setDocUrl] = useState<string>("");
@@ -72,7 +75,7 @@ function AddNewConfig() {
       const body = {
         name: name,
         type: type.type,
-        defaultValue: defaultValue,
+        defaultValue: typeCastTheDefaultValue(defaultValue,type),
         docUrl: docUrl,
         description: description,
         validations: possibleValues.split("\n").map((val) => val.trim()),
@@ -119,6 +122,9 @@ function AddNewConfig() {
     setType(value);
     setDefaultValue(value.defaultValue);
     setInputValue(value.defaultValue);
+    setIsPossibleValuesValid(true);
+    setIsDefaultValueValid(true);
+    setIsSubmitAttempted(false);
   };
   const handlePossibleValueChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -294,50 +300,58 @@ function AddNewConfig() {
             placeholder="Give a Domain Type for the config"
           />
         </div>
-        <div className="addNewConfig-form-possibleValues-container">
-          <TextField
-            fullWidth
-            label="Possible Values"
-            variant="outlined"
-            multiline
-            rows={3}
-            value={possibleValues}
-            onChange={handlePossibleValueChange}
-            placeholder="List line seperated RexExp. Like ^[a-zA-Z0-9]+$"
-            error={!isPossibleValuesValid}
-            helperText={
-              !isPossibleValuesValid ? "Possible values are invalid" : ""
-            }
-          />
-        </div>
-        <div className="addNewConfig-form-testValidation-wrapper">
-          <Button
-            onClick={() => setShowDropDownValues(!showDropDownValues)}
-            className="addNewConfig-form-testValidation-button"
-          >
-            <FontAwesomeIcon
-              icon={showDropDownValues ? faChevronDown : faChevronRight}
-            />
-            <div>Test the config validations</div>
-          </Button>
-          {showDropDownValues && (
-            <div>
+        {!typesForWhichPossibleValusAreNotApplicable.includes(type.type) && (
+          <>
+            <div className="addNewConfig-form-possibleValues-container">
               <TextField
                 fullWidth
-                label="Test"
+                label="Possible Values"
                 variant="outlined"
-                value={inputValue}
                 multiline
-                rows={10}
-                placeholder="Enter the input to test the validation"
-                onChange={(e) => setInputValue(e.target.value)}
-                error={!isTestValueValid}
-                helperText={!isTestValueValid ? testValueErrorMessage : ""}
+                rows={3}
+                value={possibleValues}
+                onChange={handlePossibleValueChange}
+                placeholder="List line seperated RexExp. 
+Example :  
+^[a-zA-Z0-9]+$ //regex for alphanumeric
+^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\d{4}$ //regex for date
+^([01]?[0-9]|2[0-3]):[0-5][0-9]$ //regex for time
+" 
+                error={!isPossibleValuesValid}
+                helperText={
+                  !isPossibleValuesValid ? "Possible values are invalid" : ""
+                }
               />
             </div>
-          )}
-        </div>
-
+            <div className="addNewConfig-form-testValidation-wrapper">
+              <Button
+                onClick={() => setShowDropDownValues(!showDropDownValues)}
+                className="addNewConfig-form-testValidation-button"
+              >
+                <FontAwesomeIcon
+                  icon={showDropDownValues ? faChevronDown : faChevronRight}
+                />
+                <div>Test the config validations</div>
+              </Button>
+              {showDropDownValues && (
+                <div>
+                  <TextField
+                    fullWidth
+                    label="Test"
+                    variant="outlined"
+                    value={inputValue}
+                    multiline
+                    rows={10}
+                    placeholder="Enter the input to test the validation"
+                    onChange={(e) => setInputValue(e.target.value)}
+                    error={!isTestValueValid}
+                    helperText={!isTestValueValid ? testValueErrorMessage : ""}
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
         <div className="addNewConfig-form-defaultValue-container">
           <TextField
             fullWidth

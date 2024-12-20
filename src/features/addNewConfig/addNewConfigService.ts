@@ -56,8 +56,8 @@ export const checkDefaultValueValidity = (
 
   // If possibleValues is provided, check if defaultValue matches any of the regex patterns
   let isValueValid = true;
-
-  if (possibleValues) {
+  const typesForWhichPossibleValusAreNotApplicable = getTypesForWhichPossibleValuesAreNotApplicable();
+  if (possibleValues && !typesForWhichPossibleValusAreNotApplicable.includes(type.type)) {
     if(!checkIfRegExpsAreValid(possibleValues)) {
       return [false, `Possible values are invalid`]
     }
@@ -88,6 +88,7 @@ export const makeAddNewConfigPostRequest = async (body: {
   description: string;
   validations: string[];
 })=> {
+  console.log(body);
   try {
     const response = await fetch("https://l8oq52vga7.execute-api.ap-south-1.amazonaws.com/globalConfig", {
       method: "POST",
@@ -128,4 +129,29 @@ export const checkIfDocURLIsValid = (value: string): boolean => {
   catch {
     return false;
   }
+}
+export const typeCastTheDefaultValue = (defaultValue : string , type : Type) => {
+  if(type.type === "string") {
+    return defaultValue;
+  }
+  if(type.type === "number") {
+    return Number(defaultValue);
+  }
+  if(type.type === "boolean") {
+    return defaultValue === "true";
+  }
+  if(type.type === "list") {
+    return JSON.parse(defaultValue);
+  }
+  if(type.type === "object") {
+    return JSON.parse(defaultValue);
+  }
+  return defaultValue;
+}
+export const getTypesForWhichPossibleValuesAreNotApplicable = () => {
+  return [
+    "boolean",
+    "object",
+    "list",
+  ]
 }
