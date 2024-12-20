@@ -83,7 +83,7 @@ function AddNewConfig() {
         validations: !typesForWhichPossibleValusAreNotApplicable.includes(type.type)? (possibleValues.split("\n").map((val) => val.trim())) : [],
         domainType: domainType,
       };
-      console.log(body)
+      // console.log(body)
       const [requestSuccessfull, message] = (await makeAddNewConfigPostRequest(
         body
       )) || [false, "Unknown error"];
