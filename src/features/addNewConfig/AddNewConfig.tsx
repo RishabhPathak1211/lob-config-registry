@@ -87,7 +87,7 @@ function AddNewConfig() {
       const [requestSuccessfull, message] = (await makeAddNewConfigPostRequest(
         body
       )) || [false, "Unknown error"];
-      if (requestSuccessfull === 201) {
+      if (requestSuccessfull) {
         setAlert({ open: true, message: message, severity: "success" });
       } else {
         setAlert({ open: true, message: message, severity: "error" });
