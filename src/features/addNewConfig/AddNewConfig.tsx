@@ -52,7 +52,7 @@ function AddNewConfig() {
   const [defaultValueErrorMessage, setDefaultValueErrorMessage] = useState("");
   const [isTestValueValid, setIsTestValueValid] = useState(true);
   const [testValueErrorMessage, setTestValueErrorMessage] = useState("");
-  const [isDomainTypeVaid, setIsDomainTypeValid] = useState(true);
+  const [isDomainTypeValid, setIsDomainTypeValid] = useState(true);
   const [isDocUrlValid, setIsDocUrlValid] = useState(true);
 
   const [alert, setAlert] = useState<{
@@ -67,7 +67,7 @@ function AddNewConfig() {
     description &&
     isDefaultValueValid &&
     isPossibleValuesValid &&
-    isDomainTypeVaid &&
+    isDomainTypeValid &&
     isDocUrlValid;
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -163,7 +163,7 @@ function AddNewConfig() {
       message: "Are you sure you want to submit?",
       header: "Confirmation",
       icon: "pi pi-exclamation-triangle",
-      accept: handleSubmit, // Call handleSubmit if confirmed
+      accept: async () => { await handleSubmit(); }, // Call handleSubmit if confirmed
       reject: () => {}, // Optional: handle rejection if needed
     });
   };
@@ -289,11 +289,11 @@ function AddNewConfig() {
             value={domainType}
             required
             onChange={handleDomainTypeChange}
-            error={(isSubmitAttempted && !domainType) || !isDomainTypeVaid}
+            error={(isSubmitAttempted && !domainType) || !isDomainTypeValid}
             helperText={
               isSubmitAttempted && !domainType
                 ? "Domain Type is Required"
-                : !isDomainTypeVaid
+                : !isDomainTypeValid
                 ? "Domain Type must only be alphanumeric and underscores"
                 : ""
             } // Conditional helper text

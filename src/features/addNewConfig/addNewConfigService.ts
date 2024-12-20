@@ -88,7 +88,6 @@ export const makeAddNewConfigPostRequest = async (body: {
   description: string;
   validations: string[];
 })=> {
-  console.log(body);
   try {
     const response = await fetch("https://l8oq52vga7.execute-api.ap-south-1.amazonaws.com/globalConfig", {
       method: "POST",
