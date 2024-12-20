@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { TextField, Button, Typography, Autocomplete } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Typography,
+  Autocomplete,
+  Alert,
+  Snackbar,
+  AlertColor,
+} from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronRight,
@@ -13,8 +21,9 @@ import {
   checkIfDomainTypeValueIsValid,
   checkIfRegExpsAreValid,
   getAllPossibleTypes,
+  getTypesForWhichPossibleValuesAreNotApplicable,
   makeAddNewConfigPostRequest,
-  shouldChangeDefaultValue,
+  typeCastTheDefaultValue,
 } from "./addNewConfigService";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import "primereact/resources/primereact.min.css"; // Core CSS
@@ -23,6 +32,7 @@ import "primeicons/primeicons.css";
 
 function AddNewConfig() {
   const possibleTypes: Type[] = getAllPossibleTypes();
+  const typesForWhichPossibleValusAreNotApplicable = getTypesForWhichPossibleValuesAreNotApplicable();
   const [name, setName] = useState<string>("");
   const [type, setType] = useState<Type>(possibleTypes[0]);
   const [docUrl, setDocUrl] = useState<string>("");
@@ -42,29 +52,49 @@ function AddNewConfig() {
   const [defaultValueErrorMessage, setDefaultValueErrorMessage] = useState("");
   const [isTestValueValid, setIsTestValueValid] = useState(true);
   const [testValueErrorMessage, setTestValueErrorMessage] = useState("");
-  const [isDomainTypeVaid, setIsDomainTypeValid] = useState(true);
+  const [isDomainTypeValid, setIsDomainTypeValid] = useState(true);
   const [isDocUrlValid, setIsDocUrlValid] = useState(true);
 
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    message: string;
+    severity: AlertColor | undefined;
+  }>({ open: false, message: "", severity: undefined });
   const canSubmit =
-    name && type && docUrl && description && isDefaultValueValid && isPossibleValuesValid && isDomainTypeVaid && isDocUrlValid;
+    name &&
+    type &&
+    docUrl &&
+    description &&
+    isDefaultValueValid &&
+    isPossibleValuesValid &&
+    isDomainTypeValid &&
+    isDocUrlValid;
   const handleSubmit = async () => {
     if (!canSubmit) return;
     try {
       const body = {
         name: name,
         type: type.type,
-        defaultValue: defaultValue,
+        defaultValue: typeCastTheDefaultValue(defaultValue,type),
         docUrl: docUrl,
         description: description,
-        possibleVals: possibleValues.split("\n").map((val) => val.trim()),
-        domainType: domainType
+        validations: possibleValues.split("\n").map((val) => val.trim()),
+        domainType: domainType,
       };
-      const response = await makeAddNewConfigPostRequest(body);
-      if (response.status === 200) {
-        alert("Config added successfully");
+      const [requestSuccessfull, message] = (await makeAddNewConfigPostRequest(
+        body
+      )) || [false, "Unknown error"];
+      if (requestSuccessfull === 201) {
+        setAlert({ open: true, message: message, severity: "success" });
+      } else {
+        setAlert({ open: true, message: message, severity: "error" });
       }
     } catch (error) {
-      alert("Failed to add config");
+      setAlert({
+        open: true,
+        message: "error while adding new config",
+        severity: "error",
+      });
       console.error(error);
     }
   };
@@ -90,55 +120,55 @@ function AddNewConfig() {
   ) => {
     if (!value) return;
     setType(value);
-    if (shouldChangeDefaultValue(defaultValue)) {
-      setDefaultValue(value.defaultValue);
-    }
-    if (shouldChangeDefaultValue(inputValue)) {
-      setInputValue(value.defaultValue);
-    }
+    setDefaultValue(value.defaultValue);
+    setInputValue(value.defaultValue);
+    setIsPossibleValuesValid(true);
+    setIsDefaultValueValid(true);
+    setIsSubmitAttempted(false);
   };
-  const handlePossibleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePossibleValueChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const newValue = e.target.value;
     setPossibleValues(newValue);
     if (newValue) {
       const isValid = checkIfRegExpsAreValid(newValue);
       setIsPossibleValuesValid(isValid);
-    }
-    else{
+    } else {
       setIsPossibleValuesValid(true);
     }
-
-  }
+  };
   const handleDomainTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setDomainType(value);
-    if(value){
+    if (value) {
       const isValid = checkIfDomainTypeValueIsValid(value);
       setIsDomainTypeValid(isValid);
-    }
-    else{
+    } else {
       setIsDomainTypeValid(true);
     }
-  }
+  };
   const handleDocUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setDocUrl(value);
-    if(value){
+    if (value) {
       const isValid = checkIfDocURLIsValid(value);
       setIsDocUrlValid(isValid);
-    }
-    else{
+    } else {
       setIsDocUrlValid(true);
     }
-  }
+  };
   const confirmSubmit = () => {
     confirmDialog({
       message: "Are you sure you want to submit?",
       header: "Confirmation",
       icon: "pi pi-exclamation-triangle",
-      accept: handleSubmit, // Call handleSubmit if confirmed
+      accept: async () => { await handleSubmit(); }, // Call handleSubmit if confirmed
       reject: () => {}, // Optional: handle rejection if needed
     });
+  };
+  const handleAlertClose = () => {
+    setAlert({ ...alert, open: false });
   };
   const confirmCancel = () => {
     confirmDialog({
@@ -230,11 +260,11 @@ function AddNewConfig() {
             error={(isSubmitAttempted && !docUrl) || !isDocUrlValid}
             placeholder="Enter the document URL"
             helperText={
-              (isSubmitAttempted && !docUrl) 
-              ? "Document URL is Required" 
-              : !isDocUrlValid
-              ? "Invalid URL (HINT: include http:// or https://)"
-              : ""
+              isSubmitAttempted && !docUrl
+                ? "Document URL is Required"
+                : !isDocUrlValid
+                ? "Invalid URL (HINT: include http:// or https://)"
+                : ""
             }
           />
           <TextField
@@ -252,66 +282,76 @@ function AddNewConfig() {
           />
         </div>
         <div className="addNewConfig-form-domainType-container">
-        <TextField
+          <TextField
             fullWidth
             label="Domain Type"
             variant="outlined"
             value={domainType}
             required
             onChange={handleDomainTypeChange}
-            error={(isSubmitAttempted && !domainType) || !isDomainTypeVaid}
+            error={(isSubmitAttempted && !domainType) || !isDomainTypeValid}
             helperText={
-              (isSubmitAttempted && !domainType) 
-              ? "Domain Type is Required" 
-              : !isDomainTypeVaid
-              ? "Domain Type must only be alphanumeric and underscores"
-              : ""
+              isSubmitAttempted && !domainType
+                ? "Domain Type is Required"
+                : !isDomainTypeValid
+                ? "Domain Type must only be alphanumeric and underscores"
+                : ""
             } // Conditional helper text
             placeholder="Give a Domain Type for the config"
           />
         </div>
-        <div className="addNewConfig-form-possibleValues-container">
-          <TextField
-            fullWidth
-            label="Possible Values"
-            variant="outlined"
-            multiline
-            rows={3}
-            value={possibleValues}
-            onChange={handlePossibleValueChange}
-            placeholder="List line seperated RexExp. Like ^[a-zA-Z0-9]+$"
-            error = {!isPossibleValuesValid}
-            helperText = {!isPossibleValuesValid ? "Possible values are invalid" : "" }
-          />
-        </div>
-        <div className="addNewConfig-form-testValidation-wrapper">
-          <Button
-            onClick={() => setShowDropDownValues(!showDropDownValues)}
-            className="addNewConfig-form-testValidation-button"
-          >
-            <FontAwesomeIcon
-              icon={showDropDownValues ? faChevronDown : faChevronRight}
-            />
-            <div>Test the config validations</div>
-          </Button>
-          {showDropDownValues && (
-            <div>
+        {!typesForWhichPossibleValusAreNotApplicable.includes(type.type) && (
+          <>
+            <div className="addNewConfig-form-possibleValues-container">
               <TextField
                 fullWidth
-                label="Test"
+                label="Possible Values"
                 variant="outlined"
-                value={inputValue}
                 multiline
-                rows={10}
-                placeholder="Enter the input to test the validation"
-                onChange={(e) => setInputValue(e.target.value)}
-                error={!isTestValueValid}
-                helperText={!isTestValueValid ? testValueErrorMessage : ""}
+                rows={3}
+                value={possibleValues}
+                onChange={handlePossibleValueChange}
+                placeholder="List line seperated RexExp. 
+Example :  
+^[a-zA-Z0-9]+$ //regex for alphanumeric
+^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\d{4}$ //regex for date
+^([01]?[0-9]|2[0-3]):[0-5][0-9]$ //regex for time
+" 
+                error={!isPossibleValuesValid}
+                helperText={
+                  !isPossibleValuesValid ? "Possible values are invalid" : ""
+                }
               />
             </div>
-          )}
-        </div>
-
+            <div className="addNewConfig-form-testValidation-wrapper">
+              <Button
+                onClick={() => setShowDropDownValues(!showDropDownValues)}
+                className="addNewConfig-form-testValidation-button"
+              >
+                <FontAwesomeIcon
+                  icon={showDropDownValues ? faChevronDown : faChevronRight}
+                />
+                <div>Test the config validations</div>
+              </Button>
+              {showDropDownValues && (
+                <div>
+                  <TextField
+                    fullWidth
+                    label="Test"
+                    variant="outlined"
+                    value={inputValue}
+                    multiline
+                    rows={10}
+                    placeholder="Enter the input to test the validation"
+                    onChange={(e) => setInputValue(e.target.value)}
+                    error={!isTestValueValid}
+                    helperText={!isTestValueValid ? testValueErrorMessage : ""}
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
         <div className="addNewConfig-form-defaultValue-container">
           <TextField
             fullWidth
@@ -337,10 +377,9 @@ function AddNewConfig() {
           <Button
             variant="contained"
             type="button" // Ideally, use "button" for confirmation
-            onClick={()=>{  
+            onClick={() => {
               setIsSubmitAttempted(true);
-              if(canSubmit)
-                confirmSubmit();
+              if (canSubmit) confirmSubmit();
             }}
             style={{ backgroundColor: "#03C5B0" }}
           >
@@ -362,6 +401,21 @@ function AddNewConfig() {
           <ConfirmDialog />
         </div>
       </div>
+      {/* Alert component */}
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={6000}
+        onClose={handleAlertClose}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleAlertClose}
+          severity={alert.severity}
+          sx={{ width: "100%" }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }
