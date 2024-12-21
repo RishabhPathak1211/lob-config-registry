@@ -65,6 +65,8 @@ function AddNewConfig() {
     type &&
     docUrl &&
     description &&
+    defaultValue &&
+    domainType&&
     isDefaultValueValid &&
     isPossibleValuesValid &&
     isDomainTypeValid &&
@@ -78,13 +80,14 @@ function AddNewConfig() {
         defaultValue: typeCastTheDefaultValue(defaultValue,type),
         docUrl: docUrl,
         description: description,
-        validations: possibleValues.split("\n").map((val) => val.trim()),
+        validations: !typesForWhichPossibleValusAreNotApplicable.includes(type.type)? (possibleValues.split("\n").map((val) => val.trim())) : [],
         domainType: domainType,
       };
+      // console.log(body)
       const [requestSuccessfull, message] = (await makeAddNewConfigPostRequest(
         body
       )) || [false, "Unknown error"];
-      if (requestSuccessfull === 201) {
+      if (requestSuccessfull) {
         setAlert({ open: true, message: message, severity: "success" });
       } else {
         setAlert({ open: true, message: message, severity: "error" });
