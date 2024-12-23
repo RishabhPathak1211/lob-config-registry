@@ -1,5 +1,6 @@
 import axios from "axios";
 import { Environment, IClientConfigFeature, IClientConfigResponse, IHealthCheckResponse } from "../types/lobComparison.types";
+import { DefaultConfigObjectType } from "../store/ConfigurationReducer/configuration-reducer.default-value";
 
 export class LobComparisonService {
     private environment: Environment;
@@ -67,6 +68,14 @@ export class LobComparisonService {
         }
 
         return mapping;
+    }
+
+    async getDefaultConfigData(){
+        const res = await axios.get('https://l8oq52vga7.execute-api.ap-south-1.amazonaws.com/globalConfig');
+        let populatedData : DefaultConfigObjectType[];
+        // const dataJson = data.json();
+        populatedData = res.data;
+        return populatedData;
     }
 }
 

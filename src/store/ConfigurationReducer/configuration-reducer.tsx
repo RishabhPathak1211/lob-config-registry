@@ -1,9 +1,10 @@
 import { CONFIGURATION_REDUCER_ACTION_TYPES } from "./configuration.action-types";
-import { CONFIGURATION_REDUCER_DEFAULT_VALUE } from "./configuration-reducer.default-value";
+import { CONFIGURATION_REDUCER_DEFAULT_VALUE, DefaultConfigObjectType } from "./configuration-reducer.default-value";
 
 interface ConfigurationState {
   configs: Record<string, Record<string, Record<string, string>>>,
   selectedDomain: string
+  defaultConfigValues: DefaultConfigObjectType[]
 }
 
 const initialState: ConfigurationState = CONFIGURATION_REDUCER_DEFAULT_VALUE;
@@ -13,6 +14,10 @@ interface SetConfigValuePayload {
   configs: Record<string, Record<string, Record<string, string>>>
 }
 
+interface SetDefaultConfigPayload {
+  defaultConfigValues : DefaultConfigObjectType[]
+}
+
 interface SetCurrentSelectedDomainPayload {
   selectedDomain: string
 }
@@ -20,7 +25,8 @@ interface SetCurrentSelectedDomainPayload {
 // Define the action types (using a union type for payload)
 type ConfigurationAction = 
   | { type: typeof CONFIGURATION_REDUCER_ACTION_TYPES.SET_CONFIG_VALUE, payload: SetConfigValuePayload }
-  | { type: typeof CONFIGURATION_REDUCER_ACTION_TYPES.SET_CURRENT_SELECTED_DOMAIN, payload: SetCurrentSelectedDomainPayload };
+  | { type: typeof CONFIGURATION_REDUCER_ACTION_TYPES.SET_CURRENT_SELECTED_DOMAIN, payload: SetCurrentSelectedDomainPayload }
+  | { type: typeof CONFIGURATION_REDUCER_ACTION_TYPES.SET_DEFAULT_CONFIG_VALUE, payload: SetDefaultConfigPayload };
 
 export const ConfigurationReducer = (
   state: ConfigurationState = initialState,
@@ -40,6 +46,12 @@ export const ConfigurationReducer = (
       return {
         ...state,
         selectedDomain: payload.selectedDomain,
+      };
+    case CONFIGURATION_REDUCER_ACTION_TYPES.SET_DEFAULT_CONFIG_VALUE:
+      // Here, TypeScript knows that payload is of type SetCurrentSelectedDomainPayload, so `payload.selectedDomain` is valid
+      return {
+        ...state,
+        defaultConfigValues: payload.defaultConfigValues,
       };
     default:
       return state;
