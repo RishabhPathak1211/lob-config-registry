@@ -11,7 +11,7 @@ import { DefaultConfigObjectType } from '../../store/ConfigurationReducer/config
 export default function DisplayAllConfigs() {
 
     const [loader, setLoader] = useState<boolean>(true);
-    const [rows, setRows] = useState<string[]>([]);
+    const [, setRows] = useState<string[]>([]);
     const [columns, setColumns] = useState<string[]>([]);
     const [columnValues, setColumnValues] = useState<Record<string, Record<string, any>>>({});
     const [populatedOptions, setPopulatedOptions] = useState<string[]>([]);
