@@ -22,7 +22,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/addNewConfig" element={<AddNewConfig />} />
-        <Route path="/displayAllConfig" element={<DisplayAllConfigs />} />
+        <Route path="/" element={<DisplayAllConfigs />} />
       </Routes>
     </Router>
     </MantineProvider>
